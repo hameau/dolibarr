@@ -6,7 +6,6 @@ class SegmentException extends Exception
  * Class for handling templating segments with odt files
  * You need PHP 5.2 at least
  * You need Zip Extension or PclZip library
- * Encoding : ISO-8859-1
  *
  * @copyright  GPL License 2008 - Julien Pauli - Cyril PIERRE de GEYER - Anaska (http://www.anaska.com)
  * @copyright  GPL License 2012 - Stephen Larroque - lrq3000@gmail.com
@@ -136,9 +135,15 @@ class Segment implements IteratorAggregate, Countable
         if (strpos($this->xml, $this->odf->getConfig('DELIMITER_LEFT') . $key . $this->odf->getConfig('DELIMITER_RIGHT')) === false) {
             throw new SegmentException("var $key not found in {$this->getName()}");
         }
+
+		$value=$this->odf->htmlToUTFAndPreOdf($value);
+
 		$value = $encode ? htmlspecialchars($value) : $value;
 		$value = ($charset == 'ISO-8859') ? utf8_encode($value) : $value;
-        $this->vars[$this->odf->getConfig('DELIMITER_LEFT') . $key . $this->odf->getConfig('DELIMITER_RIGHT')] = str_replace("\n", "<text:line-break/>", $value);
+
+		$value=$this->odf->preOdfToOdf($value);
+
+        $this->vars[$this->odf->getConfig('DELIMITER_LEFT') . $key . $this->odf->getConfig('DELIMITER_RIGHT')] = $value;
         return $this;
     }
     /**

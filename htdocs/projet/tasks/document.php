@@ -98,7 +98,7 @@ if ($id > 0 || ! empty($ref))
 			$projectstatic->fetch_thirdparty();
 		}
 
-		$object->project = dol_clone($projectstatic);
+		$object->project = clone $projectstatic;
 
 		$upload_dir = $conf->projet->dir_output.'/'.dol_sanitizeFileName($projectstatic->ref).'/'.dol_sanitizeFileName($object->ref);
 	}
@@ -110,6 +110,7 @@ if ($id > 0 || ! empty($ref))
 
 include_once DOL_DOCUMENT_ROOT . '/core/tpl/document_actions_pre_headers.tpl.php';
 
+
 /*
  * View
  */
@@ -120,7 +121,7 @@ llxHeader('',$langs->trans('Task'));
 
 if ($object->id > 0)
 {
-	if (! empty($projectstatic->socid)) $projectstatic->societe->fetch($projectstatic->socid);
+	$projectstatic->fetch_thirdparty();
 
 	$userWrite  = $projectstatic->restrictedProjectArea($user,'write');
 
@@ -142,7 +143,7 @@ if ($object->id > 0)
 		// Define a complementary filter for search of next/prev ref.
 		if (! $user->rights->projet->all->lire)
 		{
-			$projectsListId = $projectstatic->getProjectsAuthorizedForUser($user,$mine,0);
+			$projectsListId = $projectstatic->getProjectsAuthorizedForUser($user,0,0);
 			$projectstatic->next_prev_filter=" rowid in (".(count($projectsListId)?join(',',array_keys($projectsListId)):'0').")";
 		}
 		print $form->showrefnav($projectstatic,'project_ref','',1,'ref','ref','',$param.'&withproject=1');
@@ -150,8 +151,8 @@ if ($object->id > 0)
 
 		print '<tr><td>'.$langs->trans("Label").'</td><td>'.$projectstatic->title.'</td></tr>';
 
-		print '<tr><td>'.$langs->trans("Company").'</td><td>';
-		if (! empty($projectstatic->societe->id)) print $projectstatic->societe->getNomUrl(1);
+		print '<tr><td>'.$langs->trans("ThirdParty").'</td><td>';
+		if (! empty($projectstatic->thirdparty->id)) print $projectstatic->thirdparty->getNomUrl(1);
 		else print '&nbsp;';
 		print '</td>';
 		print '</tr>';
@@ -165,11 +166,19 @@ if ($object->id > 0)
 		// Statut
 		print '<tr><td>'.$langs->trans("Status").'</td><td>'.$projectstatic->getLibStatut(4).'</td></tr>';
 
+	   	// Date start
+		print '<tr><td>'.$langs->trans("DateStart").'</td><td>';
+		print dol_print_date($projectstatic->date_start,'day');
+		print '</td></tr>';
+
+		// Date end
+		print '<tr><td>'.$langs->trans("DateEnd").'</td><td>';
+		print dol_print_date($projectstatic->date_end,'day');
+		print '</td></tr>';
+
 		print '</table>';
 
 		dol_fiche_end();
-
-		print '<br>';
 	}
 
 	$head = task_prepare_head($object);
@@ -179,7 +188,7 @@ if ($object->id > 0)
 	$linkback=GETPOST('withproject')?'<a href="'.DOL_URL_ROOT.'/projet/tasks.php?id='.$projectstatic->id.'">'.$langs->trans("BackToList").'</a>':'';
 
 	// Files list constructor
-	$filearray=dol_dir_list($upload_dir,"files",0,'','\.meta$',$sortfield,(strtolower($sortorder)=='desc'?SORT_DESC:SORT_ASC),1);
+	$filearray=dol_dir_list($upload_dir,"files",0,'','(\.meta|_preview\.png)$',$sortfield,(strtolower($sortorder)=='desc'?SORT_DESC:SORT_ASC),1);
 	$totalsize=0;
 	foreach($filearray as $key => $file)
 	{
@@ -194,11 +203,11 @@ if ($object->id > 0)
 	print '</td><td colspan="3">';
 	if (empty($withproject) || empty($projectstatic->id))
 	{
-		$projectsListId = $projectstatic->getProjectsAuthorizedForUser($user,$mine,1);
+		$projectsListId = $projectstatic->getProjectsAuthorizedForUser($user,0,1);
 		$object->next_prev_filter=" fk_projet in (".$projectsListId.")";
 	}
 	else $object->next_prev_filter=" fk_projet = ".$projectstatic->id;
-	print $form->showrefnav($object,'id',$linkback,1,'rowid','ref','',$param);
+	print $form->showrefnav($object,'ref',$linkback,1,'ref','ref','',$param);
 	print '</td>';
 	print '</tr>';
 
@@ -213,8 +222,8 @@ if ($object->id > 0)
 		print '</td></tr>';
 
 		// Third party
-		print '<td>'.$langs->trans("Company").'</td><td colspan="3">';
-		if ($projectstatic->societe->id) print $projectstatic->societe->getNomUrl(1);
+		print '<td>'.$langs->trans("ThirdParty").'</td><td colspan="3">';
+		if ($projectstatic->thirdparty->id) print $projectstatic->thirdparty->getNomUrl(1);
 		else print '&nbsp;';
 		print '</td></tr>';
 	}
@@ -229,9 +238,11 @@ if ($object->id > 0)
 
 	print '<br>';
 
-	$modulepart = 'projet';
+	$param='';
+	if ($withproject) $param .= '&withproject=1';
+	$modulepart = 'project_task';
 	$permission = $user->rights->projet->creer;
-	$param = '&id=' . $object->id;
+	$relativepathwithnofile=dol_sanitizeFileName($projectstatic->ref).'/'.dol_sanitizeFileName($object->ref).'/';
 	include_once DOL_DOCUMENT_ROOT . '/core/tpl/document_actions_post_headers.tpl.php';
 }
 else
@@ -244,4 +255,3 @@ else
 llxFooter();
 
 $db->close();
-?>

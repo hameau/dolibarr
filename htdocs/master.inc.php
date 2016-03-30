@@ -9,6 +9,7 @@
  * Copyright (C) 2006 	   Andre Cianfarani     <andre.cianfarani@acdeveloppement.net>
  * Copyright (C) 2010      Juanjo Menent        <jmenent@2byte.es>
  * Copyright (C) 2011      Philippe Grand       <philippe.grand@atoo-net.com>
+ * Copyright (C) 2014		Teddy Andreotti			<125155@supinfo.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -78,9 +79,14 @@ if (! empty($dolibarr_main_document_root_alt))
 	{
 		if (preg_match('/^http(s)?:/',$value))
 		{
-			print 'Error: values for <b>$dolibarr_main_url_root_alt</b> into <b>conf.php</b> file must contains relative path added to $dolibarr_main_url_root to get alternative URLs.<br>'."\n";
-			print "Found: \"".$value."\"<br>\n";
-			print "Should found something like following examples:<br>\n";
+			// TODO: Make this a warning rather than an error since the correct value can be derived in most cases
+			$correct_value = str_replace($dolibarr_main_url_root, '', $value);
+			print '<b>Error:</b><br>'."\n";
+			print 'Wrong <b>$dolibarr_main_url_root_alt</b> value in <b>conf.php</b> file.<br>'."\n";
+			print 'We now use a relative path to $dolibarr_main_url_root to build alternate URLs.<br>'."\n";
+			print 'Value found: '.$value.'<br>'."\n";
+			print 'Should be replaced by: '.$correct_value.'<br>'."\n";
+			print "Or something like following examples:<br>\n";
 			print "\"/extensions\"<br>\n";
 			print "\"/extensions1,/extensions2,...\"<br>\n";
 			print "\"/../extensions\"<br>\n";
@@ -155,18 +161,21 @@ if (! defined('NOREQUIREDB'))
 	{
 		$conf->entity = GETPOST("entity",'int');
 	}
-	else if (defined('DOLENTITY') && is_int(DOLENTITY))				// For public page with MultiCompany module
+	else if (defined('DOLENTITY') && is_numeric(DOLENTITY))			// For public page with MultiCompany module
 	{
 		$conf->entity = DOLENTITY;
 	}
-	else if (!empty($_COOKIE['DOLENTITY']))							// For other application with MultiCompany module
+	else if (!empty($_COOKIE['DOLENTITY']))						// For other application with MultiCompany module (TODO: We should remove this. entity to use should never be stored into client side)
 	{
 		$conf->entity = $_COOKIE['DOLENTITY'];
 	}
-	else if (! empty($conf->multicompany->force_entity) && is_int($conf->multicompany->force_entity)) // To force entity in login page
+	else if (! empty($conf->multicompany->force_entity) && is_numeric($conf->multicompany->force_entity)) // To force entity in login page
 	{
 		$conf->entity = $conf->multicompany->force_entity;
 	}
+
+	// Sanitize entity
+	if (! is_numeric($conf->entity)) $conf->entity=1;
 
 	//print "Will work with data into entity instance number '".$conf->entity."'";
 
@@ -236,10 +245,7 @@ $hookmanager=new HookManager($db);
 
 if (! defined('MAIN_LABEL_MENTION_NPR') ) define('MAIN_LABEL_MENTION_NPR','NPR');
 
-// We force feature to help debug
-//$conf->global->MAIN_JS_ON_PAYMENT=0;
 
 // We force FPDF
 if (! empty($dolibarr_pdf_force_fpdf)) $conf->global->MAIN_USE_FPDF=$dolibarr_pdf_force_fpdf;
 
-?>

@@ -43,8 +43,8 @@ class ModeleExports extends CommonDocGenerator    // This class can't be abstrac
 	 *  Load into memory list of available export format
 	 *
      *  @param	DoliDB	$db     			Database handler
-     *  @param  string	$maxfilenamelength  Max length of value to show
-     *  @return	array						List of templates
+     *  @param  integer	$maxfilenamelength  Max length of value to show
+     *  @return	array						List of templates (same content than array this->driverlabel)
 	 */
 	function liste_modeles($db,$maxfilenamelength=0)
 	{
@@ -64,7 +64,7 @@ class ModeleExports extends CommonDocGenerator    // This class can't be abstrac
     			{
     				$moduleid=$reg[1];
 
-    				// Chargement de la classe
+    				// Loading Class
     				$file = $dir."/export_".$moduleid.".modules.php";
     				$classname = "Export".ucfirst($moduleid);
 
@@ -74,7 +74,7 @@ class ModeleExports extends CommonDocGenerator    // This class can't be abstrac
     				// Picto
     				$this->picto[$module->id]=$module->picto;
     				// Driver properties
-    				$this->driverlabel[$module->id]=$module->getDriverLabel();
+    				$this->driverlabel[$module->id]=$module->getDriverLabel().(empty($module->disabled)?'':' __(Disabled)__');	// '__(Disabled)__' is a key
     				$this->driverdesc[$module->id]=$module->getDriverDesc();
     				$this->driverversion[$module->id]=$module->getDriverVersion();
     				// If use an external lib
@@ -162,4 +162,3 @@ class ModeleExports extends CommonDocGenerator    // This class can't be abstrac
 }
 
 
-?>

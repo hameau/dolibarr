@@ -10,7 +10,7 @@ DolibarrHelpCenter=Dolibarr yardım ve destek merkezi
 ToGoBackToDolibarr=Aksi takdirde Dolibarr’ı kullanmak için<a href="%s">burayı tıklayın</a>
 TypeOfSupport=Destek Kaynağı
 TypeSupportCommunauty=Genel (ücretsiz)
-TypeSupportCommercial=Ticari
+TypeSupportCommercial=Ticaret
 TypeOfHelp=Tür
 NeedHelpCenter=Yardım veya desteğe mi gereksiniminiz var?
 Efficiency=Verim
@@ -25,3 +25,4 @@ LinkToGoldMember=Bo parçaçcığı (widget) tıklayarak Dolibar tarafından siz
 PossibleLanguages=Desteklenen diller
 MakeADonation=Dolibarr projesine bağış yapın
 SubscribeToFoundation=Dolibarr projesine yardım edin, vakıfa abone olun
+SeeOfficalSupport=Kendi dilinizde Dolibarr desteği için: <br><b><a href="%s" target="_blank">%s</a></b>

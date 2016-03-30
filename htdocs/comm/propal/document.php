@@ -21,8 +21,8 @@
 
 /**
  *       \file       htdocs/comm/propal/document.php
- *       \ingroup    propale
- *       \brief      Page de gestion des documents attaches a une proposition commerciale
+ *       \ingroup    propal
+ *       \brief      Management page of documents attached to a business proposal
  */
 
 require '../../main.inc.php';
@@ -34,6 +34,7 @@ require_once DOL_DOCUMENT_ROOT.'/core/class/html.formfile.class.php';
 
 $langs->load('compta');
 $langs->load('other');
+$langs->load('companies');
 
 $action		= GETPOST('action','alpha');
 $confirm	= GETPOST('confirm','alpha');
@@ -91,7 +92,7 @@ if ($object->id > 0)
 	dol_fiche_head($head, 'document', $langs->trans('Proposal'), 0, 'propal');
 
 	// Construit liste des fichiers
-	$filearray=dol_dir_list($upload_dir,"files",0,'','\.meta$',$sortfield,(strtolower($sortorder)=='desc'?SORT_DESC:SORT_ASC),1);
+	$filearray=dol_dir_list($upload_dir,"files",0,'','(\.meta|_preview\.png)$',$sortfield,(strtolower($sortorder)=='desc'?SORT_DESC:SORT_ASC),1);
 	$totalsize=0;
 	foreach($filearray as $key => $file)
 	{
@@ -137,9 +138,8 @@ if ($object->id > 0)
 }
 else
 {
-	print $langs->trans("UnkownError");
+	print $langs->trans("ErrorUnknown");
 }
 
 llxFooter();
 $db->close();
-?>

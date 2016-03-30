@@ -1,4 +1,4 @@
-#!/usr/bin/php
+#!/usr/bin/env php
 <?php
 /*
  * Copyright (C) 2005		Rodolphe Quiedeville <rodolphe@quiedeville.org>
@@ -65,7 +65,7 @@ $error=0;
  */
 
 @set_time_limit(0);
-print "***** ".$script_file." (".$version.") pid=".getmypid()." *****\n";
+print "***** ".$script_file." (".$version.") pid=".dol_getmypid()." *****\n";
 dol_syslog($script_file." launched with arg ".join(',',$argv));
 
 $now=dol_now('tzserver');
@@ -75,7 +75,7 @@ print $script_file." launched with mode ".$mode." default lang=".$langs->default
 
 if ($mode != 'confirm') $conf->global->MAIN_DISABLE_ALL_MAILS=1;
 
-$sql  = "SELECT DISTINCT c.ref, c.fk_soc, cd.date_fin_validite, cd.total_ttc, cd.description as description, p.label as plabel, s.nom as name, s.email, s.default_lang,";
+$sql  = "SELECT DISTINCT c.ref, c.fk_soc, cd.date_fin_validite, cd.total_ttc, cd.description as description, p.label as plabel, s.rowid, s.nom as name, s.email, s.default_lang,";
 $sql.= " u.rowid as uid, u.lastname, u.firstname, u.email, u.lang";
 $sql.= " FROM ".MAIN_DB_PREFIX."societe AS s, ".MAIN_DB_PREFIX."contrat AS c, ".MAIN_DB_PREFIX."contratdet AS cd";
 $sql.= " LEFT JOIN ".MAIN_DB_PREFIX."product AS p ON p.rowid = cd.fk_product, ".MAIN_DB_PREFIX."societe_commerciaux AS sc, ".MAIN_DB_PREFIX."user AS u";
@@ -116,7 +116,7 @@ if ($resql)
                 $oldemail = $obj->email;
                 $olduid = $obj->uid;
                 $oldlang = $obj->lang;
-                $oldsalerepresentative=dolGetFirstLastname($obj->firstname, $obj->lastname);;
+                $oldsalerepresentative=dolGetFirstLastname($obj->firstname, $obj->lastname);
                 $message = '';
                 $total = 0;
                 $foundtoprocess = 0;
@@ -284,4 +284,3 @@ function envoi_mail($mode,$oldemail,$message,$total,$userlang,$oldsalerepresenta
     }
 }
 
-?>

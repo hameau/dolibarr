@@ -1,9 +1,10 @@
 <?php
-/* Copyright (C) 2001-2003 Rodolphe Quiedeville  <rodolphe@quiedeville.org>
- * Copyright (C) 2004-2011 Laurent Destailleur   <eldy@users.sourceforge.net>
- * Copyright (C) 2005-2009 Regis Houssin         <regis.houssin@capnetworks.com>
- * Copyright (C) 2007      Franky Van Liedekerke <franky.van.liedekerke@telenet.be>
- * Copyright (C) 2013      Antoine Iauch         <aiauch@gpcsolutions.fr>
+/* Copyright (C) 2001-2003  Rodolphe Quiedeville    <rodolphe@quiedeville.org>
+ * Copyright (C) 2004-2013  Laurent Destailleur     <eldy@users.sourceforge.net>
+ * Copyright (C) 2005-2009  Regis Houssin           <regis.houssin@capnetworks.com>
+ * Copyright (C) 2007       Franky Van Liedekerke   <franky.van.liedekerke@telenet.be>
+ * Copyright (C) 2013       Antoine Iauch           <aiauch@gpcsolutions.fr>
+ * Copyright (C) 2015       Raphaël Doursenaud      <rdoursenaud@gpcsolutions.fr>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -29,12 +30,13 @@ require_once DOL_DOCUMENT_ROOT.'/core/lib/report.lib.php';
 require_once DOL_DOCUMENT_ROOT.'/core/lib/tax.lib.php';
 require_once DOL_DOCUMENT_ROOT.'/core/lib/date.lib.php';
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.formother.class.php';
+require_once DOL_DOCUMENT_ROOT . '/categories/class/categorie.class.php';
 
 $langs->load("companies");
 $langs->load("categories");
 
 // Define modecompta ('CREANCES-DETTES' or 'RECETTES-DEPENSES')
-$modecompta = $conf->global->COMPTA_MODE;
+$modecompta = $conf->global->ACCOUNTING_MODE;
 if (GETPOST("modecompta")) $modecompta=GETPOST("modecompta");
 
 $sortorder=isset($_GET["sortorder"])?$_GET["sortorder"]:$_POST["sortorder"];
@@ -180,49 +182,68 @@ $catotal=0;
 if ($modecompta == 'CREANCES-DETTES') {
 	$sql = "SELECT DISTINCT s.rowid as socid, s.nom as name,";
 	$sql.= " sum(f.total) as amount, sum(f.total_ttc) as amount_ttc";
-	$sql.= " FROM ".MAIN_DB_PREFIX."societe as s";
-	$sql.= " JOIN ".MAIN_DB_PREFIX."facture as f";
-	if ($selected_cat === -2) {
-	    $sql.= " LEFT OUTER JOIN ".MAIN_DB_PREFIX."categorie_societe as cs ON s.rowid = cs.fk_societe";
+	$sql.= " FROM ".MAIN_DB_PREFIX."facture as f, ".MAIN_DB_PREFIX."societe as s";
+	if ($selected_cat === -2)	// Without any category 
+	{
+	    $sql.= " LEFT OUTER JOIN ".MAIN_DB_PREFIX."categorie_societe as cs ON s.rowid = cs.fk_soc";
 	}
-	if ($selected_cat && $selected_cat !== -2) {
-	    $sql.= " LEFT JOIN ".MAIN_DB_PREFIX."categorie as c ON c.rowid = ".$selected_cat;
-	    if ($subcat) {
-		$sql.=" OR c.fk_parent = " . $selected_cat;
-	    }
-	     $sql.= " LEFT JOIN ".MAIN_DB_PREFIX."categorie_societe as cs ON cs.fk_categorie = c.rowid";
+	else if ($selected_cat) 	// Into a specific category
+	{
+	    $sql.= ", ".MAIN_DB_PREFIX."categorie as c, ".MAIN_DB_PREFIX."categorie_societe as cs";
 	}
 	$sql.= " WHERE f.fk_statut in (1,2)";
 	if (! empty($conf->global->FACTURE_DEPOSITS_ARE_JUST_PAYMENTS)) {
-	    $sql.= " AND f.type IN (0,1,2)";
+	    $sql.= " AND f.type IN (0,1,2,5)";
 	} else {
-	    $sql.= " AND f.type IN (0,1,2,3)";
+	    $sql.= " AND f.type IN (0,1,2,3,5)";
 	}
 	$sql.= " AND f.fk_soc = s.rowid";
 	if ($date_start && $date_end) {
 	    $sql.= " AND f.datef >= '".$db->idate($date_start)."' AND f.datef <= '".$db->idate($date_end)."'";
 	}
-	if ($selected_cat === -2) {
-	    $sql.=" AND cs.fk_societe is null";
+	if ($selected_cat === -2)	// Without any category  
+	{
+	    $sql.=" AND cs.fk_soc is null";
 	}
-	if ($selected_cat && $selected_cat !== -2) {
-	    $sql.= " AND cs.fk_societe = s.rowid";
+	else if ($selected_cat) {	// Into a specific category
+	    $sql.= " AND (c.rowid = ".$selected_cat;
+	    if ($subcat) $sql.=" OR c.fk_parent = " . $selected_cat;
+	    $sql.= ")";
+		$sql.= " AND cs.fk_categorie = c.rowid AND cs.fk_soc = s.rowid";
 	}
-    } else {
+} else {
 	/*
 	 * Liste des paiements (les anciens paiements ne sont pas vus par cette requete car, sur les
 	 * vieilles versions, ils n'etaient pas lies via paiement_facture. On les ajoute plus loin)
 	 */
 	$sql = "SELECT s.rowid as socid, s.nom as name, sum(pf.amount) as amount_ttc";
-	$sql .= " FROM ".MAIN_DB_PREFIX."societe as s";
-	$sql.= ", ".MAIN_DB_PREFIX."facture as f";
+	$sql.= " FROM ".MAIN_DB_PREFIX."facture as f";
 	$sql.= ", ".MAIN_DB_PREFIX."paiement_facture as pf";
 	$sql.= ", ".MAIN_DB_PREFIX."paiement as p";
-	$sql .= " WHERE p.rowid = pf.fk_paiement";
+	$sql.= ", ".MAIN_DB_PREFIX."societe as s";
+	if ($selected_cat === -2)	// Without any category 
+	{
+	    $sql.= " LEFT OUTER JOIN ".MAIN_DB_PREFIX."categorie_societe as cs ON s.rowid = cs.fk_soc";
+	}
+	else if ($selected_cat) 	// Into a specific category
+	{
+	    $sql.= ", ".MAIN_DB_PREFIX."categorie as c, ".MAIN_DB_PREFIX."categorie_societe as cs";
+	}
+	$sql.= " WHERE p.rowid = pf.fk_paiement";
 	$sql.= " AND pf.fk_facture = f.rowid";
 	$sql.= " AND f.fk_soc = s.rowid";
 	if ($date_start && $date_end) {
 	    $sql.= " AND p.datep >= '".$db->idate($date_start)."' AND p.datep <= '".$db->idate($date_end)."'";
+	}
+	if ($selected_cat === -2)	// Without any category  
+	{
+	    $sql.=" AND cs.fk_soc is null";
+	}
+	else if ($selected_cat) {	// Into a specific category
+	    $sql.= " AND (c.rowid = ".$selected_cat;
+	    if ($subcat) $sql.=" OR c.fk_parent = " . $selected_cat;
+	    $sql.= ")";
+		$sql.= " AND cs.fk_categorie = c.rowid AND cs.fk_soc = s.rowid";
 	}
 }
 $sql.= " AND f.entity = ".$conf->entity;
@@ -231,6 +252,7 @@ $sql.= " GROUP BY s.rowid, s.nom";
 $sql.= " ORDER BY s.rowid";
 //echo $sql;
 
+dol_syslog("casoc", LOG_DEBUG);
 $result = $db->query($sql);
 if ($result) {
 	$num = $db->num_rows($result);
@@ -251,7 +273,7 @@ if ($result) {
 
 // On ajoute les paiements anciennes version, non lies par paiement_facture
 if ($modecompta != 'CREANCES-DETTES') {
-	$sql = "SELECT '0' as socid, 'Autres' as name, sum(DISTINCT p.amount) as amount_ttc";
+	$sql = "SELECT '0' as socid, 'Autres' as name, sum(p.amount) as amount_ttc";
 	$sql.= " FROM ".MAIN_DB_PREFIX."bank as b";
 	$sql.= ", ".MAIN_DB_PREFIX."bank_account as ba";
 	$sql.= ", ".MAIN_DB_PREFIX."paiement as p";
@@ -259,7 +281,7 @@ if ($modecompta != 'CREANCES-DETTES') {
 	$sql.= " WHERE pf.rowid IS NULL";
 	$sql.= " AND p.fk_bank = b.rowid";
 	$sql.= " AND b.fk_account = ba.rowid";
-	$sql.= " AND ba.entity = ".$conf->entity;
+	$sql.= " AND ba.entity IN (".getEntity('bank_account', 1).")";
 	if ($date_start && $date_end) $sql.= " AND p.datep >= '".$db->idate($date_start)."' AND p.datep <= '".$db->idate($date_end)."'";
 	$sql.= " GROUP BY socid, name";
 	$sql.= " ORDER BY name";
@@ -293,16 +315,16 @@ print "<table class=\"noborder\" width=\"100%\">";
     // Category filter
 print '<tr class="liste_titre">';
 print '<td>';
-print $langs->trans("Category") . ': ' . $formother->select_categories(2, $selected_cat, 'search_categ', true);
+print $langs->trans("Category") . ': ' . $formother->select_categories(Categorie::TYPE_CUSTOMER, $selected_cat, 'search_categ', true);
 print ' ';
 print $langs->trans("SubCats") . '? ';
 print '<input type="checkbox" name="subcat" value="yes"';
 if ($subcat) {
-    print ' checked="checked"';
+    print ' checked';
 }
 print'></td>';
 print '<td colspan="4" align="right">';
-print '<input type="image" class="liste_titre" name="button_search" src="'.DOL_URL_ROOT.'/theme/'.$conf->theme.'/img/search.png"  value="'.dol_escape_htmltag($langs->trans("Search")).'" title="'.dol_escape_htmltag($langs->trans("Search")).'">';
+print '<input type="image" class="liste_titre" name="button_search" src="'.img_picto($langs->trans("Search"),'search.png','','',1).'"  value="'.dol_escape_htmltag($langs->trans("Search")).'" title="'.dol_escape_htmltag($langs->trans("Search")).'">';
 print '</td>';
 print '</tr>';
     // Array titles
@@ -328,7 +350,7 @@ if ($modecompta == 'CREANCES-DETTES') {
            $sortorder
 	);
     } else {
-	print '<td colspan="1"></td>';
+	print_liste_field_titre('');
 }
 print_liste_field_titre(
 	$langs->trans("AmountTTC"),
@@ -409,9 +431,9 @@ if (count($amount)) {
 		print '<td align="right">';
 		if ($modecompta != 'CREANCES-DETTES') {
                     if ($key > 0) {
-			print '<a href="'.DOL_URL_ROOT.'/compta/paiement/liste.php?socid='.$key.'">';
+			print '<a href="'.DOL_URL_ROOT.'/compta/paiement/list.php?socid='.$key.'">';
 		    } else {
-			print '<a href="'.DOL_URL_ROOT.'/compta/paiement/liste.php?socid=-1">';
+			print '<a href="'.DOL_URL_ROOT.'/compta/paiement/list.php?socid=-1">';
 		    }
 		} else {
 		    if ($key > 0) {
@@ -427,9 +449,9 @@ if (count($amount)) {
 		print '<td align="right">';
 		if ($modecompta != 'CREANCES-DETTES') {
                     if ($key > 0) {
-                        print '<a href="'.DOL_URL_ROOT.'/compta/paiement/liste.php?socid='.$key.'">';
+                        print '<a href="'.DOL_URL_ROOT.'/compta/paiement/list.php?socid='.$key.'">';
 		    } else {
-			print '<a href="'.DOL_URL_ROOT.'/compta/paiement/liste.php?orphelins=1">';
+			print '<a href="'.DOL_URL_ROOT.'/compta/paiement/list.php?orphelins=1">';
 		    }
 		} else {
                     if ($key > 0) {
@@ -483,4 +505,3 @@ print '</form>';
 llxFooter();
 
 $db->close();
-?>

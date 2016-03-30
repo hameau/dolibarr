@@ -1,5 +1,5 @@
 <?php
-/* Copyright (C) 2004-2012 Laurent Destailleur  <eldy@users.sourceforge.net>
+/* Copyright (C) 2004-2014 Laurent Destailleur  <eldy@users.sourceforge.net>
  * Copyright (C) 2005-2011 Regis Houssin        <regis.houssin@capnetworks.com>
  * Copyright (C) 2007      Patrick Raguin 		<patrick.raguin@gmail.com>
  *
@@ -53,9 +53,11 @@ class FormAdmin
 	 * 		@param		array		$filter			Array of keys to exclude in list
 	 * 		@param		int			$showempty		Add empty value
 	 *      @param      int			$showwarning    Show a warning if language is not complete
+	 *      @param		int			$disabled		Disable edit of select
+	 *      @param		string		$morecss		Add more css styles
 	 *      @return		string						Return HTML select string with list of languages
 	 */
-	function select_language($selected='',$htmlname='lang_id',$showauto=0,$filter=0,$showempty=0,$showwarning=0)
+	function select_language($selected='',$htmlname='lang_id',$showauto=0,$filter=0,$showempty=0,$showwarning=0,$disabled=0,$morecss='')
 	{
 		global $langs;
 
@@ -63,17 +65,17 @@ class FormAdmin
 
 		$out='';
 
-		$out.= '<select class="flat" id="'.$htmlname.'" name="'.$htmlname.'">';
+		$out.= '<select class="flat'.($morecss?' '.$morecss:'').'" id="'.$htmlname.'" name="'.$htmlname.'"'.($disabled?' disabled':'').'>';
 		if ($showempty)
 		{
 			$out.= '<option value=""';
-			if ($selected == '') $out.= ' selected="selected"';
+			if ($selected == '') $out.= ' selected';
 			$out.= '>&nbsp;</option>';
 		}
 		if ($showauto)
 		{
 			$out.= '<option value="auto"';
-			if ($selected == 'auto') $out.= ' selected="selected"';
+			if ($selected == 'auto') $out.= ' selected';
 			$out.= '>'.$langs->trans("AutoDetectLang").'</option>';
 		}
 
@@ -95,7 +97,7 @@ class FormAdmin
 			}
 			else if ($selected == $key)
 			{
-				$out.= '<option value="'.$key.'" selected="selected">'.$value.'</option>';
+				$out.= '<option value="'.$key.'" selected>'.$value.'</option>';
 			}
 			else
 			{
@@ -103,6 +105,10 @@ class FormAdmin
 			}
 		}
 		$out.= '</select>';
+
+		// Make select dynamic
+        include_once DOL_DOCUMENT_ROOT . '/core/lib/ajax.lib.php';
+        $out.= ajax_combobox($htmlname);
 
 		return $out;
 	}
@@ -146,7 +152,7 @@ class FormAdmin
     	                        if (preg_match('/eldy_(backoffice|frontoffice)\.php$/i',$file)) continue;		// We exclude all menu manager files
     	                        if (preg_match('/auguria_(backoffice|frontoffice)\.php$/i',$file)) continue;	// We exclude all menu manager files
     	                        if (preg_match('/smartphone_(backoffice|frontoffice)\.php$/i',$file)) continue;	// We exclude all menu manager files
-    	                        
+
     	                        $filelib=preg_replace('/\.php$/i','',$file);
     	        				$prefix='';
     	        				// 0=Recommanded, 1=Experimental, 2=Developpement, 3=Other
@@ -156,7 +162,7 @@ class FormAdmin
 
     	                        if ($file == $selected)
     	                        {
-    	        					$menuarray[$prefix.'_'.$file]='<option value="'.$file.'" selected="selected">'.$filelib.'</option>';
+    	        					$menuarray[$prefix.'_'.$file]='<option value="'.$file.'" selected>'.$filelib.'</option>';
     	                        }
     	                        else
     	                        {
@@ -180,10 +186,10 @@ class FormAdmin
 			$newprefix=$tab[0];
 			if ($newprefix=='1' && ($conf->global->MAIN_FEATURES_LEVEL < 1)) continue;
 			if ($newprefix=='2' && ($conf->global->MAIN_FEATURES_LEVEL < 2)) continue;
-			if (! empty($conf->browser->firefox) && $newprefix != $oldprefix)	// Add separators
+			if ($newprefix != $oldprefix)	// Add separators
 			{
 				// Affiche titre
-				print '<option value="-1" disabled="disabled">';
+				print '<option value="-1" disabled>';
 				if ($newprefix=='0') print '-- '.$langs->trans("VersionRecommanded").' --';
                 if ($newprefix=='1') print '-- '.$langs->trans("VersionExperimental").' --';
 				if ($newprefix=='2') print '-- '.$langs->trans("VersionDevelopment").' --';
@@ -199,9 +205,9 @@ class FormAdmin
     /**
      *  Return combo list of available menu families
      *
-     *  @param	string	$selected        Menu pre-selected
-     *  @param  string	$htmlname        Name of html select
-     *  @param	string	$dirmenuarray    Directories to scan
+     *  @param	string		$selected        Menu pre-selected
+     *  @param	string		$htmlname        Name of html select
+     *  @param	string[]	$dirmenuarray    Directories to scan
      *  @return	void
      */
     function select_menu_families($selected, $htmlname, $dirmenuarray)
@@ -256,7 +262,7 @@ class FormAdmin
 			print '<option value="'.$key.'"';
             if ($key == $selected)
 			{
-				print '	selected="selected"';
+				print '	selected';
 			}
 			print '>';
 			if ($key == 'all') print $langs->trans("AllMenus");
@@ -311,7 +317,7 @@ class FormAdmin
 		foreach ($arraytz as $lib => $gmt)
 		{
 			print '<option value="'.$lib.'"';
-			if ($selected == $lib || $selected == $gmt) print ' selected="selected"';
+			if ($selected == $lib || $selected == $gmt) print ' selected';
 			print '>'.$gmt.'</option>'."\n";
 		}
 		print '</select>';
@@ -324,7 +330,7 @@ class FormAdmin
 	 *
 	 *    	@param      string	$selected       Paper format pre-selected
 	 *    	@param      string	$htmlname       Name of HTML select field
-	 * 		@param		string	$filter			Key to filter
+	 * 		@param		string	$filter			Value to filter on code
 	 * 		@param		int		$showempty		Add empty value
 	 * 		@return		string					Return HTML output
 	 */
@@ -332,8 +338,12 @@ class FormAdmin
 	{
 		global $langs;
 
-		$sql="SELECT code, label, width, height, unit FROM ".MAIN_DB_PREFIX."c_paper_format where active=1";
-        if ($filter) $sql.=" WHERE code LIKE '%".$filter."%'";
+		$langs->load("dict");
+
+		$sql = "SELECT code, label, width, height, unit";
+		$sql.= " FROM ".MAIN_DB_PREFIX."c_paper_format";
+		$sql.= " WHERE active=1";
+        if ($filter) $sql.=" AND code LIKE '%".$this->db->escape($filter)."%'";
 
         $resql=$this->db->query($sql);
         if ($resql)
@@ -350,21 +360,25 @@ class FormAdmin
                 $i++;
             }
         }
-        else dol_print_error($this->db);
+        else
+		{
+			dol_print_error($this->db);
+			return '';
+		}
 		$out='';
 
 		$out.= '<select class="flat" id="'.$htmlname.'" name="'.$htmlname.'">';
 		if ($showempty)
 		{
 			$out.= '<option value=""';
-			if ($selected == '') $out.= ' selected="selected"';
+			if ($selected == '') $out.= ' selected';
 			$out.= '>&nbsp;</option>';
 		}
 		foreach ($paperformat as $key => $value)
 		{
             if ($selected == $key)
 			{
-				$out.= '<option value="'.$key.'" selected="selected">'.$value.'</option>';
+				$out.= '<option value="'.$key.'" selected>'.$value.'</option>';
 			}
 			else
 			{
@@ -376,4 +390,3 @@ class FormAdmin
 		return $out;
 	}
 }
-?>

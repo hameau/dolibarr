@@ -6,6 +6,7 @@ CountryES=Ισπανία
 CountryDE=Γερμανία
 CountryCH=Σουηδία
 CountryGB=Μεγάλη Βρετανία
+CountryUK=Ηνωμένο Βασίλειο
 CountryIE=Ιρλανδία
 CountryCN=Κίνα
 CountryTN=Τυνησία
@@ -249,10 +250,9 @@ CountryMF=Saint Martin
 ##### Civilities #####
 CivilityMME=Κυρία
 CivilityMR=Κύριος
-CivilityMLE=Κυρία
+CivilityMLE=Δεσποινίς
 CivilityMTRE=Master
-CivilityDR=Doctor
-
+CivilityDR=Δόκτορας
 ##### Currencies #####
 Currencyeuros=€
 CurrencyAUD=AU Dollars
@@ -289,10 +289,10 @@ CurrencyXOF=CFA Francs BCEAO
 CurrencySingXOF=CFA Franc BCEAO
 CurrencyXPF=CFP Francs
 CurrencySingXPF=CFP Franc
-
 CurrencyCentSingEUR=cent
+CurrencyCentINR=paisa
+CurrencyCentSingINR=paise
 CurrencyThousandthSingTND=thousandth
-
 #### Input reasons #####
 DemandReasonTypeSRC_INTE=Internet
 DemandReasonTypeSRC_CAMP_MAIL=Εκστρατεία για τις Ταχυδρομικές
@@ -305,7 +305,6 @@ DemandReasonTypeSRC_WOM=Word of mouth
 DemandReasonTypeSRC_PARTNER=Partner
 DemandReasonTypeSRC_EMPLOYEE=Employee
 DemandReasonTypeSRC_SPONSORING=Sponsorship
-
 #### Paper formats ####
 PaperFormatEU4A0=Format 4A0
 PaperFormatEU2A0=Format 2A0
